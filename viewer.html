@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>캐릭터 AI QA 시트 (읽기 전용)</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#f8f7f4;--surface:#fff;--surface-2:#f1efe8;--border:rgba(0,0,0,0.12);--text:#1a1a1a;--text-2:#5f5e5a;--text-3:#888780;--accent:#534AB7;--accent-bg:#EEEDFE;--danger:#A32D2D;--danger-bg:#FCEBEB;--danger-border:#F7C1C1;--info:#185FA5;--info-bg:#E6F1FB;--warning:#854F0B;--warning-bg:#FAEEDA;--radius:8px;--radius-lg:12px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Pretendard","Apple SD Gothic Neo",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+  .header-title{font-size:16px;font-weight:600}
+  .header-badge{display:inline-block;padding:3px 10px;background:var(--info-bg);color:var(--info);border-radius:999px;font-size:11px;font-weight:500}
+  .container{max-width:1280px;margin:0 auto;padding:24px}
+  .char-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 20px;margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .char-bar label{font-size:13px;color:var(--text-2);font-weight:500}
+  .char-bar select{padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--surface);min-width:200px}
+  .char-bar .meta{margin-left:auto;color:var(--text-3);font-size:12px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+  .stat-label{font-size:12px;color:var(--text-2);margin-bottom:4px}
+  .stat-value{font-size:22px;font-weight:600}
+  .stat-value.warn{color:var(--danger)}
+  .filter-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+  .chip{padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;color:var(--text-2);font-family:inherit}
+  .chip:hover{background:var(--surface-2)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .chip.danger.active{background:var(--danger);border-color:var(--danger)}
+  .tabs-wrap{background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;display:flex}
+  .tabs{display:flex;flex:1;overflow-x:auto;border-bottom:1px solid var(--border)}
+  .tab{padding:14px 20px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text-2);border:none;border-right:1px solid var(--border);background:transparent;font-family:inherit;white-space:nowrap;flex-shrink:0;position:relative}
+  .tab:hover{background:var(--surface-2)}
+  .tab.active{color:var(--accent);background:var(--surface)}
+  .tab.active::after{content:"";position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent)}
+  .tab-error-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--danger);color:#fff;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;margin-left:8px;min-width:18px}
+  .phase-content{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:24px}
+  .phase-content.hidden{display:none}
+  .phase-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap}
+  .phase-header h2{font-size:18px;font-weight:600;flex:1;min-width:0}
+  .phase-meta{font-size:13px;color:var(--text-2)}
+  .section{margin-bottom:28px}
+  .section-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .section-title .badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:4px}
+  .section-title.flow .badge{background:var(--info-bg);color:var(--info)}
+  .section-title.taboo .badge{background:var(--warning-bg);color:var(--warning)}
+  .item{border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;background:var(--surface)}
+  .item.has-error{border-color:var(--danger-border);background:#fffafa}
+  .item.hidden{display:none}
+  .item-row{display:flex;align-items:flex-start;gap:12px}
+  .item-mark{flex-shrink:0;margin-top:2px;width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+  .item-mark.checked{background:var(--danger);border-color:var(--danger)}
+  .item-content{flex:1;min-width:0}
+  .item-text{font-size:14px;line-height:1.6;margin-bottom:4px;white-space:pre-wrap;word-break:keep-all;padding:4px 6px}
+  .item-error-area{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--danger-border)}
+  .item.has-error .item-error-area{display:block}
+  .error-label{font-size:12px;color:var(--danger);font-weight:500;margin-bottom:6px;display:block}
+  .error-detail-view{padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;line-height:1.5;white-space:pre-wrap;color:var(--text);min-height:30px}
+  .error-detail-view:empty::before{content:"(상세 내용 없음)";color:var(--text-3);font-style:italic}
+  .image-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .image-thumb{width:80px;height:80px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);cursor:pointer}
+  .image-thumb img{width:100%;height:100%;object-fit:cover}
+  .general-note{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-top:16px}
+  .general-note h3{font-size:15px;font-weight:600;margin-bottom:10px}
+  .general-note-view{padding:12px;background:var(--surface-2);border-radius:var(--radius);font-size:14px;line-height:1.6;white-space:pre-wrap;min-height:50px}
+  .general-note-view:empty::before{content:"(작성된 의견 없음)";color:var(--text-3);font-style:italic}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;padding:24px}
+  .modal.show{display:flex}
+  .modal img{max-width:90vw;max-height:90vh;border-radius:var(--radius)}
+  .modal-close{position:absolute;top:16px;right:16px;color:#fff;background:rgba(0,0,0,.5);border:none;font-size:24px;width:40px;height:40px;border-radius:50%;cursor:pointer}
+  .loading-screen{padding:80px 24px;text-align:center;color:var(--text-2)}
+  .loading-screen .spinner{font-size:32px;margin-bottom:16px}
+  @media (max-width:768px){.stats{grid-template-columns:repeat(2,1fr)}.container{padding:16px}.tab{padding:12px 14px}.phase-content{padding:16px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-title">캐릭터 AI 채팅 QA 시트 <span class="header-badge">읽기 전용</span></div>
+  <div style="margin-left:auto;font-size:12px;color:var(--text-3)" id="updatedAt"></div>
+</div>
+<div class="container">
+  <div id="content">
+    <div class="loading-screen">
+      <div class="spinner">⏳</div>
+      <div>데이터를 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+<div class="modal" id="imageModal" onclick="closeImageModal()">
+  <button class="modal-close" onclick="closeImageModal()">×</button>
+  <img id="modalImg" src="" alt="">
+</div>
+<script>
+  const DATA_URL = "https://raw.githubusercontent.com/bal2116-lab/NC_QA/main/data.json";
+  let viewerState = { currentChar: null, chars: {}, filter: "all", activeTabs: {} };
+  
+  function escapeHTML(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
+  function escapeAttr(s){return String(s||"").replace(/&/g,"&amp;").replace(/'/g,"&#39;").replace(/"/g,"&quot;")}
+  function countErrors(p){return p.flow.filter(i=>i.error).length+p.taboo.filter(i=>i.error).length}
+  
+  async function loadData(){
+    try{
+      const res = await fetch(DATA_URL + "?t=" + Date.now(), {cache:"no-store"});
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      viewerState.chars = data.chars || {};
+      Object.keys(viewerState.chars).forEach(name=>{
+        viewerState.activeTabs[name] = viewerState.chars[name].activeTab || 0;
+      });
+      viewerState.currentChar = Object.keys(viewerState.chars)[0];
+      if(data.exportedAt){
+        document.getElementById("updatedAt").textContent = "업데이트: " + new Date(data.exportedAt).toLocaleString("ko-KR");
+      }
+      if(!viewerState.currentChar){
+        document.getElementById("content").innerHTML = '<div class="loading-screen"><div class="spinner">📭</div><div>아직 등록된 데이터가 없습니다.</div></div>';
+        return;
+      }
+      renderApp();
+    }catch(e){
+      document.getElementById("content").innerHTML = '<div class="loading-screen"><div class="spinner">⚠️</div><div>데이터를 불러올 수 없습니다.</div><div style="font-size:12px;margin-top:8px;color:var(--text-3)">' + escapeHTML(e.message) + '</div></div>';
+    }
+  }
+  
+  function renderApp(){
+    const charOptions = Object.keys(viewerState.chars).map(name=>'<option value="'+escapeAttr(name)+'"'+(name===viewerState.currentChar?' selected':'')+'>'+escapeHTML(name)+'</option>').join("");
+    document.getElementById("content").innerHTML = `
+      <div class="char-bar">
+        <label>캐릭터:</label>
+        <select id="charSelect" onchange="switchChar(this.value)">${charOptions}</select>
+        <span class="meta" id="charMeta"></span>
+      </div>
+      <div class="stats" id="statsArea"></div>
+      <div class="filter-bar">
+        <span style="font-size:13px;color:var(--text-2);font-weight:500">필터:</span>
+        <button class="chip active" data-filter="all" onclick="setFilter('all')">전체 보기</button>
+        <button class="chip danger" data-filter="error" onclick="setFilter('error')">오류 항목만</button>
+      </div>
+      <div class="tabs-wrap"><div class="tabs" id="tabsArea"></div></div>
+      <div id="phaseArea"></div>
+      <div class="general-note">
+        <h3>📝 기타 의견</h3>
+        <div class="general-note-view" id="generalNoteView"></div>
+      </div>
+    `;
+    renderChar();
+  }
+  
+  function switchChar(name){
+    viewerState.currentChar = name;
+    renderChar();
+  }
+  
+  function renderChar(){
+    const c = viewerState.chars[viewerState.currentChar];
+    if(!c) return;
+    const activeTab = viewerState.activeTabs[viewerState.currentChar] || 0;
+    
+    // 통계
+    let total=0, errors=0, images=0;
+    c.phases.forEach(p=>{
+      [...p.flow,...p.taboo].forEach(i=>{
+        total++;
+        if(i.error) errors++;
+        images += (i.images||[]).length;
+      });
+    });
+    document.getElementById("statsArea").innerHTML = `
+      <div class="stat"><div class="stat-label">전체 항목</div><div class="stat-value">${total}</div></div>
+      <div class="stat"><div class="stat-label">Phase 수</div><div class="stat-value">${c.phases.length}</div></div>
+      <div class="stat"><div class="stat-label">오류 발견</div><div class="stat-value warn">${errors}</div></div>
+      <div class="stat"><div class="stat-label">첨부 이미지</div><div class="stat-value">${images}</div></div>
+    `;
+    
+    document.getElementById("charMeta").textContent = c.createdAt ? "생성일: " + new Date(c.createdAt).toLocaleDateString("ko-KR") : "";
+    
+    // 탭
+    document.getElementById("tabsArea").innerHTML = c.phases.map((p,i)=>{
+      const ec = countErrors(p);
+      return `<button class="tab${i===activeTab?' active':''}" onclick="setTab(${i})">${escapeHTML(p.name)}${ec>0?'<span class="tab-error-badge">'+ec+'</span>':''}</button>`;
+    }).join("");
+    
+    // 페이즈
+    document.getElementById("phaseArea").innerHTML = c.phases.map((p,pi)=>{
+      const flowItems = p.flow.map((it,ii)=>renderItem(it,pi,'flow',ii)).join("");
+      const tabooItems = p.taboo.map((it,ii)=>renderItem(it,pi,'taboo',ii)).join("");
+      return `
+        <div class="phase-content${pi!==activeTab?' hidden':''}">
+          <div class="phase-header">
+            <h2>${escapeHTML(p.name)}</h2>
+            <span class="phase-meta">플로우 ${p.flow.length}개 · 금기 ${p.taboo.length}개 · 오류 ${countErrors(p)}건</span>
+          </div>
+          <div class="section">
+            <div class="section-title flow">플로우 <span class="badge">FLOW</span></div>
+            ${flowItems || '<div style="color:var(--text-3);padding:8px;font-style:italic">등록된 플로우 없음</div>'}
+          </div>
+          <div class="section">
+            <div class="section-title taboo">금기 <span class="badge">TABOO</span></div>
+            ${tabooItems || '<div style="color:var(--text-3);padding:8px;font-style:italic">등록된 금기 없음</div>'}
+          </div>
+        </div>
+      `;
+    }).join("");
+    
+    document.getElementById("generalNoteView").textContent = c.generalNote || "";
+    applyFilter();
+  }
+  
+  function renderItem(item, pi, type, ii){
+    const imagesHTML = (item.images||[]).map(img=>'<div class="image-thumb" onclick="openImageModal(\''+escapeAttr(img)+'\')"><img src="'+escapeAttr(img)+'" alt=""></div>').join("");
+    return `
+      <div class="item ${item.error?'has-error':''}" data-error="${item.error}">
+        <div class="item-row">
+          <div class="item-mark ${item.error?'checked':''}">${item.error?'✓':''}</div>
+          <div class="item-content">
+            <div class="item-text">${escapeHTML(item.text)}</div>
+            <div class="item-error-area">
+              <label class="error-label">⚠️ 오류 상세</label>
+              <div class="error-detail-view">${escapeHTML(item.errorDetail||'')}</div>
+              ${imagesHTML?'<div class="image-list">'+imagesHTML+'</div>':''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  
+  function setTab(i){
+    viewerState.activeTabs[viewerState.currentChar] = i;
+    renderChar();
+  }
+  
+  function setFilter(f){
+    viewerState.filter = f;
+    document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active", c.dataset.filter===f));
+    applyFilter();
+  }
+  function applyFilter(){
+    document.querySelectorAll(".item").forEach(item=>{
+      const isError = item.dataset.error==="true";
+      let show = true;
+      if(viewerState.filter==="error") show = isError;
+      item.classList.toggle("hidden", !show);
+    });
+  }
+  
+  function openImageModal(src){
+    document.getElementById("modalImg").src = src;
+    document.getElementById("imageModal").classList.add("show");
+  }
+  function closeImageModal(){
+    document.getElementById("imageModal").classList.remove("show");
+  }
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeImageModal(); });
+  
+  loadData();
+</script>
+</body>
+</html>
